@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squad Performance Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #00ff88, #0088ff, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #cccccc;
+            margin-bottom: 10px;
+        }
+
+        .squad-stats {
+            font-size: 1em;
+            color: #00ff88;
+            margin-top: 15px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 15px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #00ff88;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+
+        .comparison-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .comparison-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:hover, button:hover {
+            background: rgba(0, 255, 136, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .vs-text {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .comparison-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 255, 136, 0.5);
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.2);
+        }
+
+        .player-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00ff88, #0088ff, #ff6b35);
+        }
+
+        .player-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #00ff88;
+        }
+
+        .clickable-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .clickable-stat {
+            text-align: center;
+            padding: 12px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .clickable-stat:hover, .clickable-stat:active {
+            background: rgba(0, 255, 136, 0.2);
+            transform: scale(1.02);
+            border-color: rgba(0, 255, 136, 0.5);
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #cccccc;
+            margin-bottom: 6px;
+        }
+
+        .stat-rank {
+            font-size: 0.7em;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .improvement-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #00ff88;
+        }
+
+        .improvement-section h4 {
+            color: #00ff88;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .efficiency-bar {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            height: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .efficiency-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ffaa00, #00ff88);
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .efficiency-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.75em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid #00ff88;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #ffffff;
+        }
+
+        .improvement-category {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .improvement-category h4 {
+            color: #0088ff;
+            margin-bottom: 10px;
+        }
+
+        .improvement-steps {
+            list-style: none;
+            padding: 0;
+        }
+
+        .improvement-steps li {
+            margin: 8px 0;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #00ff88;
+        }
+
+        .stat-comparison {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-normalized {
+            background: rgba(0, 255, 136, 0.2);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .stat-raw {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .improvement-indicator {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.7em;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+
+        .improvement-up {
+            background: #00ff88;
+            color: #000;
+        }
+
+        .improvement-down {
+            background: #ff4444;
+            color: #fff;
+        }
+
+        .improvement-stable {
+            background: #ffaa00;
+            color: #000;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .comparison-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .clickable-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95vw;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Squad Improvement Hub</h1>
+        <p class="subtitle">Level Up Together - Tap Any Stat for Instant Tips!</p>
+        <div class="squad-stats">
+            <span>🎯 Total Eliminations: 12,968</span> | 
+            <span>🏆 Combined Wins: 103</span> | 
+            <span>📈 Squad Potential: UNLIMITED</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="toggle-container">
+            <span>Raw Stats</span>
+            <div class="toggle-switch" id="playtimeToggle" onclick="togglePlaytimeNormalization()">
+                <div class="toggle-slider"></div>
+            </div>
+            <span style="color: #00ff88; font-weight: bold;">Per-Hour</span>
+        </div>
+        <div class="toggle-container">
+            <span>Current</span>
+            <div class="toggle-switch" id="trendToggle" onclick="toggleTrendAnalysis()">
+                <div class="toggle-slider"></div>
+            </div>
+            <span style="color: #0088ff; font-weight: bold;">Trends</span>
+        </div>
+    </div>
+
+    <div class="comparison-section">
+        <h3 style="color: #00ff88; margin-bottom: 15px;">⚔️ Head-to-Head Showdown</h3>
+        <div class="comparison-controls">
+            <select id="player1Select">
+                <option value="">Player 1</option>
+                <option value="GETAMICIDIOT">GETAMICIDIOT</option>
+                <option value="RIVALSON10">RIVALSON10</option>
+                <option value="WOODGRIPR">WOODGRIPR</option>
+                <option value="CTRL ALT DELETE">CTRL ALT DELETE</option>
+                <option value="T DOG 8043P">T DOG 8043P</option>
+            </select>
+            <span class="vs-text">VS</span>
+            <select id="player2Select">
+                <option value="">Player 2</option>
+                <option value="GETAMICIDIOT">GETAMICIDIOT</option>
+                <option value="RIVALSON10">RIVALSON10</option>
+                <option value="WOODGRIPR">WOODGRIPR</option>
+                <option value="CTRL ALT DELETE">CTRL ALT DELETE</option>
+                <option value="T DOG 8043P">T DOG 8043P</option>
+            </select>
+            <select id="statSelect">
+                <option value="eliminations">Eliminations</option>
+                <option value="kdRatio">K/D Ratio</option>
+                <option value="wins">Wins</option>
+                <option value="headshotPercent">Headshot %</option>
+            </select>
+            <button onclick="compareStats()">🔥 COMPARE</button>
+        </div>
+        <div class="comparison-result" id="comparisonResult">
+            Select players and stat to compare! 🎯
+        </div>
+    </div>
+
+    <div class="dashboard-grid" id="playerCards"></div>
+
+    <!-- Modal for improvement tips -->
+    <div id="improvementModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="improvementContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Player data
+        const playerData = {
+            'GETAMICIDIOT': {
+                totalScore: 4592233, scorePerMin: 360, gamesPlayed: 1384, totalPlaytime: '80h 20m', playtimeMinutes: 4820,
+                eliminations: 7771, deaths: 3966, kdRatio: 1.81, wins: 64, headshotPercent: 10.70,
+                trends: { kdRatio: [1.65, 1.72, 1.78, 1.81], headshotPercent: [9.8, 10.2, 10.5, 10.7] }
+            },
+            'RIVALSON10': {
+                totalScore: 2451151, scorePerMin: 298, gamesPlayed: 861, totalPlaytime: '50h 16m', playtimeMinutes: 3016,
+                eliminations: 3378, deaths: 2542, kdRatio: 1.33, wins: 19, headshotPercent: 10.26,
+                trends: { kdRatio: [1.15, 1.22, 1.28, 1.33], headshotPercent: [9.1, 9.6, 9.9, 10.26] }
+            },
+            'WOODGRIPR': {
+                totalScore: 360324, scorePerMin: 260, gamesPlayed: 133, totalPlaytime: '23h 7m', playtimeMinutes: 1387,
+                eliminations: 360, deaths: 318, kdRatio: 1.13, wins: 3, headshotPercent: 13.04,
+                trends: { kdRatio: [0.95, 1.02, 1.08, 1.13], headshotPercent: [11.2, 12.1, 12.8, 13.04] }
+            },
+            'CTRL ALT DELETE': {
+                totalScore: 609840, scorePerMin: 230, gamesPlayed: 248, totalPlaytime: '10h 20m', playtimeMinutes: 620,
+                eliminations: 626, deaths: 695, kdRatio: 0.90, wins: 9, headshotPercent: 10.39,
+                trends: { kdRatio: [0.75, 0.82, 0.87, 0.90], headshotPercent: [8.8, 9.4, 9.9, 10.39] }
+            },
+            'T DOG 8043P': {
+                totalScore: 780204, scorePerMin: 226, gamesPlayed: 337, totalPlaytime: '20h 9m', playtimeMinutes: 1209,
+                eliminations: 833, deaths: 1056, kdRatio: 0.79, wins: 8, headshotPercent: 12.23,
+                trends: { kdRatio: [0.68, 0.72, 0.76, 0.79], headshotPercent: [10.8, 11.4, 11.9, 12.23] }
+            }
+        };
+
+        // State
+        let isPlaytimeNormalized = false;
+        let showTrends = false;
+
+        // Improvement tips
+        const improvementTips = {
+            eliminations: {
+                title: "🔥 Boost Your Elimination Game",
+                tips: [
+                    "Use meta weapons: C9 SMG for close range (574ms TTK)",
+                    "Practice crosshair placement at head/chest level",
+                    "Push third parties when you hear fighting nearby",
+                    "Warm up with 20 minutes of aim training daily",
+                    "Master slide canceling and movement techniques"
+                ]
+            },
+            kdRatio: {
+                title: "⚔️ Improve Your K/D Ratio", 
+                tips: [
+                    "Play for position - use cover and high ground",
+                    "Don't chase kills into bad positions",
+                    "Learn when to disengage from unfavorable fights",
+                    "Use stuns/flashes before pushing enemies",
+                    "Focus on staying alive rather than risky plays"
+                ]
+            },
+            wins: {
+                title: "🏆 Secure More Wins",
+                tips: [
+                    "Prioritize circle positioning over kills in final zones",
+                    "Save UAVs and self-revives for endgame",
+                    "Learn the best final circle spots on each map",
+                    "Don't engage unnecessary fights near final circle",
+                    "Practice different endgame scenarios"
+                ]
+            },
+            headshotPercent: {
+                title: "🎯 Increase Headshot Accuracy",
+                tips: [
+                    "Lower your sensitivity for better precision",
+                    "Aim for upper chest - let recoil carry to head",
+                    "Use 3D Aim Trainer daily for 20-30 minutes",
+                    "Practice burst firing instead of full auto",
+                    "Pre-aim common angles at head level"
+                ]
+            }
+        };
+
+        // Calculate normalized stats
+        function getNormalizedStats(data) {
+            const hours = data.playtimeMinutes / 60;
+            return {
+                elimsPerHour: (data.eliminations / hours).toFixed(1),
+                winsPerHour: (data.wins / hours).toFixed(2)
+            };
+        }
+
+        // Get improvement trend
+        function getImprovementTrend(trendArray) {
+            if (trendArray.length < 2) return 'stable';
+            const recent = trendArray.slice(-2);
+            const change = ((recent[1] - recent[0]) / recent[0]) * 100;
+            return change > 2 ? 'up' : change < -2 ? 'down' : 'stable';
+        }
+
+        function getImprovementValue(trendArray) {
+            if (trendArray.length < 2) return 0;
+            const recent = trendArray.slice(-2);
+            const change = ((recent[1] - recent[0]) / recent[0]) * 100;
+            return Math.abs(change).toFixed(1);
+        }
+
+        // Generate player cards
+        function generatePlayerCards() {
+            const container = document.getElementById('playerCards');
+            const players = Object.keys(playerData);
+            container.innerHTML = '';
+            
+            players.forEach(player => {
+                const data = playerData[player];
+                const normalized = getNormalizedStats(data);
+                const winRate = ((data.wins / data.gamesPlayed) * 100).toFixed(1);
+                
+                const kdTrend = getImprovementTrend(data.trends.kdRatio);
+                const kdChange = getImprovementValue(data.trends.kdRatio);
+                const headshotTrend = getImprovementTrend(data.trends.headshotPercent);
+                const headshotChange = getImprovementValue(data.trends.headshotPercent);
+                
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.innerHTML = `
+                    <div class="player-name">${player}</div>
+                    
+                    <div class="clickable-stats">
+                        <div class="clickable-stat" onclick="showImprovementTips('eliminations', '${player}')">
+                            ${isPlaytimeNormalized ? `
+                                <div class="stat-comparison">
+                                    <div class="stat-normalized">${normalized.elimsPerHour}/hr</div>
+                                    <div class="stat-raw">${data.eliminations.toLocaleString()}</div>
+                                </div>
+                            ` : `
+                                <div class="stat-value">${data.eliminations.toLocaleString()}</div>
+                            `}
+                            <div class="stat-label">${isPlaytimeNormalized ? 'Eliminations/Hour' : 'Total Eliminations'}</div>
+                        </div>
+                        
+                        <div class="clickable-stat" onclick="showImprovementTips('kdRatio', '${player}')">
+                            <div class="stat-value">
+                                ${data.kdRatio}
+                                ${showTrends ? `
+                                    <span class="improvement-indicator improvement-${kdTrend}">
+                                        ${kdTrend === 'up' ? '↗' : kdTrend === 'down' ? '↘' : '→'} ${kdChange}%
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <div class="stat-label">K/D Ratio</div>
+                        </div>
+                        
+                        <div class="clickable-stat" onclick="showImprovementTips('wins', '${player}')">
+                            ${isPlaytimeNormalized ? `
+                                <div class="stat-comparison">
+                                    <div class="stat-normalized">${normalized.winsPerHour}/hr</div>
+                                    <div class="stat-raw">${data.wins}</div>
+                                </div>
+                            ` : `
+                                <div class="stat-value">${data.wins}</div>
+                            `}
+                            <div class="stat-label">${isPlaytimeNormalized ? 'Wins/Hour' : 'Total Wins'}</div>
+                            <div class="stat-rank">${winRate}% Win Rate</div>
+                        </div>
+                        
+                        <div class="clickable-stat" onclick="showImprovementTips('headshotPercent', '${player}')">
+                            <div class="stat-value">
+                                ${data.headshotPercent}%
+                                ${showTrends ? `
+                                    <span class="improvement-indicator improvement-${headshotTrend}">
+                                        ${headshotTrend === 'up' ? '↗' : headshotTrend === 'down' ? '↘' : '→'} ${headshotChange}%
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <div class="stat-label">Headshot %</div>
+                        </div>
+                    </div>
+                    
+                    <div class="efficiency-bar">
+                        <div class="efficiency-fill" style="width: ${Math.min(data.kdRatio * 50, 100)}%"></div>
+                        <div class="efficiency-text">Performance Score</div>
+                    </div>
+                    
+                    <div class="improvement-section">
+                        <h4>💡 ${getQuickWin(player, data)}</h4>
+                        <p style="color: #cccccc; font-size: 0.9em;">Tap any stat above for improvement tips! 🚀</p>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function getQuickWin(player, data) {
+            if (data.headshotPercent < 11) return "Practice aim training daily - boost K/D by 0.3+";
+            if (data.kdRatio < 1.0) return "Focus on positioning - avoid risky pushes";
+            if ((data.wins / data.gamesPlayed) < 0.03) return "Save equipment for endgame situations";
+            return "You're doing great! Help teammates improve";
+        }
+
+        // Toggle functions
+        function togglePlaytimeNormalization() {
+            isPlaytimeNormalized = !isPlaytimeNormalized;
+            document.getElementById('playtimeToggle').classList.toggle('active');
+            generatePlayerCards();
+        }
+
+        function toggleTrendAnalysis() {
+            showTrends = !showTrends;
+            document.getElementById('trendToggle').classList.toggle('active');
+            generatePlayerCards();
+        }
+
+        // Compare stats
+        function compareStats() {
+            const player1 = document.getElementById('player1Select').value;
+            const player2 = document.getElementById('player2Select').value;
+            const stat = document.getElementById('statSelect').value;
+            const result = document.getElementById('comparisonResult');
+            
+            if (!player1 || !player2) {
+                result.innerHTML = "Select both players! 🎯";
+                return;
+            }
+            
+            if (player1 === player2) {
+                result.innerHTML = "Pick different players! 😄";
+                return;
+            }
+            
+            const value1 = playerData[player1][stat];
+            const value2 = playerData[player2][stat];
+            
+            const winner = value1 > value2 ? player1 : player2;
+            const loser = value1 > value2 ? player2 : player1;
+            const winnerValue = Math.max(value1, value2);
+            const loserValue = Math.min(value1, value2);
+            
+            result.innerHTML = `
+                <div>
+                    <h3 style="color: #00ff88;">🏆 ${winner} WINS!</h3>
+                    <div style="margin: 10px 0;">
+                        <strong>${winner}:</strong> ${winnerValue} vs <strong>${loser}:</strong> ${loserValue}
+                    </div>
+                    <em style="color: #00ff88;">${loser}: Tap "${stat}" on your card for tips!</em>
+                </div>
+            `;
+        }
+
+        // Show improvement tips
+        function showImprovementTips(statType, player) {
+            const modal = document.getElementById('improvementModal');
+            const content = document.getElementById('improvementContent');
+            const tips = improvementTips[statType];
+            const data = playerData[player];
+            
+            content.innerHTML = `
+                <h3>${tips.title}</h3>
+                <div class="improvement-category">
+                    <h4>📊 ${player}'s Current Stats</h4>
+                    <p><strong>Current Value:</strong> ${data[statType]}</p>
+                </div>
+                
+                <div class="improvement-category">
+                    <h4>🚀 Improvement Steps</h4>
+                    <ul class="improvement-steps">
+                        ${tips.tips.map(tip => `<li>${tip}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div class="improvement-category">
+                    <h4>⏱️ 7-Day Challenge</h4>
+                    <ul class="improvement-steps">
+                        <li><strong>Days 1-2:</strong> Practice first 2 tips for 30 min before playing</li>
+                        <li><strong>Days 3-4:</strong> Focus on implementing during games</li>
+                        <li><strong>Days 5-6:</strong> Track improvement and adjust</li>
+                        <li><strong>Day 7:</strong> Compare stats - expect 15-30% improvement!</li>
+                    </ul>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('improvementModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('improvementModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Initialize
+        generatePlayerCards();
+    </script>
+</body>
+</html>
